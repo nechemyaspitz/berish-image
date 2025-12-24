@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Stacker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f8f9fa;
+            color: #1a1a1a;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: #111;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+            align-items: stretch;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid #e8e8e8;
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+        }
+
+        /* Template Grid */
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        @media (max-width: 900px) {
+            .template-grid {
+                grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            }
+        }
+
+        .template-item {
+            cursor: pointer;
+        }
+
+        .template-thumb {
+            aspect-ratio: 1;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.15s ease;
+            background: #fafafa;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .template-item:hover .template-thumb {
+            border-color: #ccc;
+        }
+
+        .template-item.active .template-thumb {
+            border-color: #0066ff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
+        }
+
+        .template-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 4px;
+        }
+
+        .template-name {
+            font-size: 0.7rem;
+            text-align: center;
+            padding: 0.35rem 0.25rem 0;
+            color: #666;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            border: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: #0066ff;
+            color: #fff;
+            width: 100%;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #0052cc;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e8e8e8;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: #fff;
+            width: 100%;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #059669;
+        }
+
+        .btn-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+        }
+
+        /* Upload area */
+        .upload-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px dashed #d0d0d0;
+            border-radius: 8px;
+            padding: 1.5rem 1rem;
+            text-align: center;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            background: #fafafa;
+            gap: 0.25rem;
+        }
+
+        .upload-area:hover {
+            border-color: #0066ff;
+            background: #f0f7ff;
+        }
+
+        .upload-icon {
+            width: 28px;
+            height: 28px;
+            color: #999;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .upload-hint {
+            font-size: 0.75rem;
+            color: #999;
+        }
+
+        /* Scale Slider */
+        .slider-group {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .slider-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .slider-value {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #0066ff;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #e0e0e0;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #0066ff;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #0066ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Canvas Area */
+        .canvas-area {
+            background: #fff;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+            border: 1px solid #e8e8e8;
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .canvas-wrapper {
+            background: 
+                linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+                linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+            background-color: #fff;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            min-height: 450px;
+        }
+
+        #canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .canvas-container {
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .canvas-placeholder {
+            text-align: center;
+            color: #aaa;
+            padding: 3rem;
+        }
+
+        .canvas-placeholder svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            stroke: #ccc;
+        }
+
+        .canvas-placeholder p {
+            font-size: 0.9rem;
+        }
+
+        #fabric-canvas {
+            display: none;
+        }
+
+        #fabric-canvas.visible {
+            display: block;
+        }
+
+        /* Instructions */
+        .instructions {
+            font-size: 0.8rem;
+            color: #888;
+            line-height: 1.7;
+        }
+
+        .instructions p {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .instructions p::before {
+            content: "";
+            width: 4px;
+            height: 4px;
+            background: #ccc;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: #1a1a1a;
+            color: #fff;
+            padding: 0.875rem 1.5rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .canvas-area {
+                padding: 1rem;
+                min-height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Berish Campaign Photo Editor</h1>
+            <p class="subtitle">Layer your photo behind a poster</p>
+        </header>
+
+        <div class="layout">
+            <div class="sidebar">
+                <div class="card">
+                    <h2 class="card-title">Template</h2>
+                    <div class="template-grid" id="template-grid"></div>
+                </div>
+
+                <div class="card">
+                    <h2 class="card-title">Your Photo</h2>
+                    <label class="upload-area" id="upload-area" for="background-input">
+                        <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                        <span class="upload-text">Upload Photo</span>
+                        <span class="upload-hint">Click or drag to upload</span>
+                    </label>
+                    <input type="file" id="background-input" accept="image/*" style="display:none;">
+                    
+                    <div class="slider-group" id="scale-controls" style="display: none;">
+                        <div class="slider-header">
+                            <span class="slider-label">Scale</span>
+                            <span class="slider-value" id="scale-value">100%</span>
+                        </div>
+                        <input type="range" id="photo-scale" min="50" max="300" value="100">
+                    </div>
+
+                    <div class="btn-row">
+                        <button class="btn btn-secondary" id="fit-btn" disabled>Fit</button>
+                        <button class="btn btn-secondary" id="center-btn" disabled>Center</button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <button class="btn btn-success" id="download-btn" disabled>
+                        Download Image
+                    </button>
+                    
+                    <div class="instructions" style="margin-top: 1rem;">
+                        <p>Select a template</p>
+                        <p>Upload your photo</p>
+                        <p>Drag & resize to position</p>
+                        <p>Download the result</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main">
+                <div class="canvas-area">
+                    <div class="canvas-wrapper" id="canvas-wrapper">
+                        <div id="canvas-container">
+                            <div class="canvas-placeholder" id="placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+                                </svg>
+                                <p>Select a template to begin</p>
+                            </div>
+                            <canvas id="fabric-canvas"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // State
+        let OVERLAY_IMAGES = [];
+        let canvas = null;
+        let overlayImage = null;
+        let backgroundImage = null;
+        let canvasWidth = 600;
+        let canvasHeight = 600;
+        let currentOverlay = null;
+        let baseScale = 1;
+
+        // DOM Elements
+        const fabricCanvas = document.getElementById('fabric-canvas');
+        const placeholder = document.getElementById('placeholder');
+        const templateGrid = document.getElementById('template-grid');
+        const backgroundInput = document.getElementById('background-input');
+        const photoScale = document.getElementById('photo-scale');
+        const scaleValue = document.getElementById('scale-value');
+        const scaleControls = document.getElementById('scale-controls');
+        const downloadBtn = document.getElementById('download-btn');
+        const fitBtn = document.getElementById('fit-btn');
+        const centerBtn = document.getElementById('center-btn');
+        const toast = document.getElementById('toast');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+
+        // Initialize template thumbnails
+        function initTemplateGrid() {
+            templateGrid.innerHTML = '';
+            
+            OVERLAY_IMAGES.forEach(filename => {
+                const item = document.createElement('div');
+                item.className = 'template-item';
+                item.dataset.filename = filename;
+                
+                const thumb = document.createElement('div');
+                thumb.className = 'template-thumb';
+                
+                const img = document.createElement('img');
+                img.src = `images/${filename}`;
+                img.alt = filename;
+                img.loading = 'lazy';
+                
+                thumb.appendChild(img);
+                item.appendChild(thumb);
+                
+                const name = document.createElement('div');
+                name.className = 'template-name';
+                name.textContent = filename.replace(/\.[^/.]+$/, '');
+                item.appendChild(name);
+                
+                templateGrid.appendChild(item);
+                
+                item.addEventListener('click', () => selectTemplate(filename));
+            });
+        }
+
+        // Check URL for overlay parameter
+        function checkUrlParams() {
+            const params = new URLSearchParams(window.location.search);
+            const overlayParam = params.get('overlay');
+            
+            if (overlayParam && OVERLAY_IMAGES.includes(overlayParam)) {
+                selectTemplate(overlayParam);
+            }
+        }
+
+        // Select a template
+        function selectTemplate(filename) {
+            currentOverlay = filename;
+            
+            // Update active state
+            document.querySelectorAll('.template-item').forEach(item => {
+                item.classList.toggle('active', item.dataset.filename === filename);
+            });
+            
+            // Update URL
+            const url = new URL(window.location);
+            url.searchParams.set('overlay', filename);
+            window.history.replaceState({}, '', url);
+            
+            // Load the overlay
+            loadOverlayImage(filename);
+        }
+
+        // Get max canvas dimensions based on viewport
+        function getMaxCanvasDimensions() {
+            const canvasArea = document.querySelector('.canvas-area');
+            const rect = canvasArea.getBoundingClientRect();
+            const padding = 60; // Account for padding in canvas-area
+            return {
+                maxWidth: rect.width - padding,
+                maxHeight: Math.max(rect.height - padding, 400)
+            };
+        }
+
+        // Initialize canvas with given dimensions
+        function initCanvas(width, height) {
+            const { maxWidth, maxHeight } = getMaxCanvasDimensions();
+            
+            // Scale down if needed while maintaining aspect ratio
+            let scale = 1;
+            if (width > maxWidth || height > maxHeight) {
+                scale = Math.min(maxWidth / width, maxHeight / height);
+            }
+            
+            canvasWidth = Math.round(width * scale);
+            canvasHeight = Math.round(height * scale);
+            
+            if (canvas) {
+                canvas.dispose();
+            }
+
+            placeholder.style.display = 'none';
+            fabricCanvas.classList.add('visible');
+
+            canvas = new fabric.Canvas('fabric-canvas', {
+                width: canvasWidth,
+                height: canvasHeight,
+                backgroundColor: '#ffffff',
+                selection: true,
+                preserveObjectStacking: true
+            });
+
+            // Store original dimensions for export
+            canvas.originalWidth = width;
+            canvas.originalHeight = height;
+            canvas.displayScale = scale;
+
+            canvas.renderAll();
+            updateButtons();
+        }
+
+        // Load overlay image
+        function loadOverlayImage(filename) {
+            const imgPath = `images/${filename}`;
+            
+            fabric.Image.fromURL(imgPath, function(img) {
+                if (!img || !img.width) {
+                    showToast('Failed to load image');
+                    return;
+                }
+
+                // Initialize canvas with image dimensions
+                initCanvas(img.width, img.height);
+
+                // Remove existing overlay
+                if (overlayImage) {
+                    canvas.remove(overlayImage);
+                }
+
+                // Scale image to fit canvas
+                const scaleX = canvasWidth / img.width;
+                const scaleY = canvasHeight / img.height;
+                
+                overlayImage = img;
+                overlayImage.set({
+                    left: 0,
+                    top: 0,
+                    scaleX: scaleX,
+                    scaleY: scaleY,
+                    selectable: false,
+                    evented: false,
+                    opacity: 1,
+                    originX: 'left',
+                    originY: 'top'
+                });
+
+                canvas.add(overlayImage);
+                bringOverlayToFront();
+                canvas.renderAll();
+                
+                // Re-add background if exists
+                if (backgroundImage) {
+                    reloadBackgroundImage();
+                }
+                
+                updateButtons();
+            }, { crossOrigin: 'anonymous' });
+        }
+
+        // Reload background image when overlay changes
+        function reloadBackgroundImage() {
+            if (!backgroundImage || !backgroundImage._originalSrc) return;
+            
+            const src = backgroundImage._originalSrc;
+            canvas.remove(backgroundImage);
+            
+            fabric.Image.fromURL(src, function(img) {
+                setupBackgroundImage(img);
+            }, { crossOrigin: 'anonymous' });
+        }
+
+        // Setup background image with proportional-only scaling
+        function setupBackgroundImage(img) {
+            // Calculate scale to cover canvas
+            const scaleX = canvasWidth / img.width;
+            const scaleY = canvasHeight / img.height;
+            baseScale = Math.max(scaleX, scaleY);
+
+            backgroundImage = img;
+            backgroundImage._originalSrc = img._element ? img._element.src : null;
+            
+            backgroundImage.set({
+                scaleX: baseScale,
+                scaleY: baseScale,
+                left: canvasWidth / 2,
+                top: canvasHeight / 2,
+                originX: 'center',
+                originY: 'center',
+                selectable: true,
+                hasControls: true,
+                hasBorders: true,
+                // Styling for controls
+                cornerColor: '#0066ff',
+                cornerStrokeColor: '#0066ff',
+                cornerStyle: 'circle',
+                cornerSize: 12,
+                transparentCorners: false,
+                borderColor: '#0066ff',
+                borderScaleFactor: 1.5,
+                // Lock to proportional scaling
+                lockUniScaling: true
+            });
+
+            // Hide middle handles to only allow corner (proportional) scaling
+            backgroundImage.setControlVisible('mt', false);
+            backgroundImage.setControlVisible('mb', false);
+            backgroundImage.setControlVisible('ml', false);
+            backgroundImage.setControlVisible('mr', false);
+            backgroundImage.setControlVisible('mtr', true); // Keep rotation
+
+            canvas.add(backgroundImage);
+            sendBackgroundToBack();
+            
+            // Reset scale slider
+            photoScale.value = 100;
+            scaleValue.textContent = '100%';
+            scaleControls.style.display = 'block';
+
+            canvas.setActiveObject(backgroundImage);
+            canvas.renderAll();
+            
+            updateButtons();
+        }
+
+        // Load background image (user's photo)
+        function loadBackgroundImage(file) {
+            if (!canvas) {
+                showToast('Please select a template first');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Remove existing background first
+                if (backgroundImage) {
+                    canvas.remove(backgroundImage);
+                    backgroundImage = null;
+                }
+                
+                // Use fabric.Image.fromURL for proper initialization
+                fabric.Image.fromURL(e.target.result, function(img) {
+                    if (!img || !img.width) {
+                        showToast('Error loading image');
+                        return;
+                    }
+                    setupBackgroundImage(img);
+                    showToast('Photo added! Drag to position.');
+                });
+            };
+            
+            reader.onerror = function() {
+                showToast('Error reading file');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Keep overlay on top
+        function bringOverlayToFront() {
+            if (overlayImage && canvas) {
+                canvas.bringToFront(overlayImage);
+            }
+        }
+
+        // Keep background behind
+        function sendBackgroundToBack() {
+            if (backgroundImage && canvas) {
+                canvas.sendToBack(backgroundImage);
+                bringOverlayToFront();
+            }
+        }
+
+        // Update photo scale
+        function updatePhotoScale(value) {
+            if (backgroundImage && baseScale) {
+                const newScale = baseScale * (value / 100);
+                backgroundImage.set({
+                    scaleX: newScale,
+                    scaleY: newScale
+                });
+                canvas.renderAll();
+            }
+            scaleValue.textContent = `${value}%`;
+        }
+
+        // Fit photo to canvas
+        function fitPhotoToCanvas() {
+            if (backgroundImage) {
+                const scaleX = canvasWidth / backgroundImage.width;
+                const scaleY = canvasHeight / backgroundImage.height;
+                baseScale = Math.max(scaleX, scaleY);
+                
+                backgroundImage.set({
+                    scaleX: baseScale,
+                    scaleY: baseScale,
+                    left: canvasWidth / 2,
+                    top: canvasHeight / 2
+                });
+                
+                photoScale.value = 100;
+                scaleValue.textContent = '100%';
+                
+                canvas.renderAll();
+            }
+        }
+
+        // Center photo
+        function centerPhoto() {
+            if (backgroundImage) {
+                backgroundImage.set({
+                    left: canvasWidth / 2,
+                    top: canvasHeight / 2
+                });
+                canvas.renderAll();
+            }
+        }
+
+        // Download final image
+        function downloadImage() {
+            if (!canvas || !overlayImage) return;
+
+            // Temporarily hide selection
+            canvas.discardActiveObject();
+            canvas.renderAll();
+
+            // Export at original resolution
+            const multiplier = 1 / canvas.displayScale;
+            
+            const dataURL = canvas.toDataURL({
+                format: 'png',
+                quality: 1,
+                multiplier: multiplier
+            });
+
+            const link = document.createElement('a');
+            const overlayName = currentOverlay ? currentOverlay.replace(/\.[^/.]+$/, '') : 'stacked';
+            link.download = `${overlayName}-photo.png`;
+            link.href = dataURL;
+            link.click();
+            
+            showToast('Image downloaded!');
+        }
+
+        // Update button states
+        function updateButtons() {
+            const hasCanvas = canvas !== null;
+            const hasOverlay = overlayImage !== null;
+            const hasBackground = backgroundImage !== null;
+            
+            downloadBtn.disabled = !hasOverlay || !hasBackground;
+            fitBtn.disabled = !hasBackground;
+            centerBtn.disabled = !hasBackground;
+        }
+
+        // Show toast notification
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Event listeners
+        backgroundInput.addEventListener('change', (e) => {
+            if (e.target.files && e.target.files[0]) {
+                loadBackgroundImage(e.target.files[0]);
+            }
+        });
+
+        photoScale.addEventListener('input', (e) => {
+            updatePhotoScale(e.target.value);
+        });
+
+        downloadBtn.addEventListener('click', downloadImage);
+        fitBtn.addEventListener('click', fitPhotoToCanvas);
+        centerBtn.addEventListener('click', centerPhoto);
+
+        // Handle window resize
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                if (currentOverlay) {
+                    selectTemplate(currentOverlay);
+                }
+            }, 250);
+        });
+
+        // Load images list from JSON file
+        async function loadImagesList() {
+            try {
+                const response = await fetch('images/images.json');
+                if (!response.ok) throw new Error('Failed to load images list');
+                OVERLAY_IMAGES = await response.json();
+                initTemplateGrid();
+                checkUrlParams();
+            } catch (error) {
+                console.error('Error loading images:', error);
+                templateGrid.innerHTML = '<p style="color: #999; font-size: 0.85rem; grid-column: 1/-1;">No templates found</p>';
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', loadImagesList);
+    </script>
+</body>
+</html>
